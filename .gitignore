@@ -1,0 +1,14 @@
+# secrets
+.env
+
+# python
+__pycache__/
+*.pyc
+.conda/
+
+# data & model artifacts (대용량)
+datasets/raw/
+datasets/merged/
+models/*.pt
+outputs/
+runs/
