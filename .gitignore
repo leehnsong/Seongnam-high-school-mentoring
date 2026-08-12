@@ -4,11 +4,20 @@
 # python
 __pycache__/
 *.pyc
+.pytest_cache/
 .conda/
 
 # data & model artifacts (대용량)
 datasets/raw/
 datasets/merged/
 models/*.pt
-outputs/
+outputs/*
 runs/
+
+# keep dir placeholders (부모 디렉토리가 통째로 무시되면 재포함이 불가하므로 outputs는 outputs/* 로 지정)
+!datasets/.gitkeep
+!models/.gitkeep
+!outputs/.gitkeep
+
+# sdd scratch
+.superpowers/
