@@ -8,16 +8,17 @@ __pycache__/
 .conda/
 
 # data & model artifacts (대용량)
-datasets/raw/
-datasets/merged/
+datasets/raw/*
+datasets/merged/*
 models/*.pt
 outputs/*
 runs/
 
-# keep dir placeholders (부모 디렉토리가 통째로 무시되면 재포함이 불가하므로 outputs는 outputs/* 로 지정)
-!datasets/.gitkeep
-!models/.gitkeep
-!outputs/.gitkeep
-
 # sdd scratch
 .superpowers/
+
+# keep dir placeholders
+# 부모 디렉토리를 통째로 무시하면 재포함이 불가하므로 dir/* 형태로 지정한다.
+!datasets/raw/.gitkeep
+!datasets/merged/.gitkeep
+!outputs/.gitkeep
