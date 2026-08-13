@@ -22,3 +22,6 @@ runs/
 !datasets/raw/.gitkeep
 !datasets/merged/.gitkeep
 !outputs/.gitkeep
+
+# 루트에 내려받은 사전학습 가중치 (yolo11s.pt 등)
+/*.pt
