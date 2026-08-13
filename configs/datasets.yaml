@@ -4,6 +4,12 @@ classes:
   - bicycle
   - stroller
 
+# train split에만 적용되는 클래스별 오버샘플링 배수.
+# 해당 클래스를 하나라도 포함한 학습 이미지를 이 배수만큼 복제한다.
+# val split에는 절대 적용하지 않는다 (평가 지표 왜곡 방지).
+oversample:
+  bicycle: 8
+
 # Roboflow Universe 원본 데이터셋 목록.
 # version을 생략하면 사용 가능한 가장 높은 버전을 자동 선택한다.
 sources:

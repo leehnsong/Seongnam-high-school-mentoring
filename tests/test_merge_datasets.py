@@ -134,3 +134,69 @@ def test_reset_output_dir_restores_gitkeep_after_wipe(tmp_path):
     (out / ".gitkeep").touch()
     md.reset_output_dir(out)
     assert (out / ".gitkeep").exists(), "재실행 후에도 .gitkeep이 남아야 한다"
+
+
+def test_build_oversample_factors_maps_names_to_ids():
+    assert md.build_oversample_factors({"bicycle": 8}, UNIFIED) == {1: 8}
+
+
+def test_build_oversample_factors_handles_none_and_empty():
+    assert md.build_oversample_factors(None, UNIFIED) == {}
+    assert md.build_oversample_factors({}, UNIFIED) == {}
+
+
+def test_build_oversample_factors_rejects_unknown_class():
+    with pytest.raises(ValueError):
+        md.build_oversample_factors({"truck": 2}, UNIFIED)
+
+
+def test_build_oversample_factors_rejects_bad_factor():
+    with pytest.raises(ValueError):
+        md.build_oversample_factors({"bicycle": 0}, UNIFIED)
+    with pytest.raises(ValueError):
+        md.build_oversample_factors({"bicycle": "8"}, UNIFIED)
+
+
+def test_oversample_factor_defaults_to_one():
+    assert md.oversample_factor("0 0.5 0.5 0.2 0.2\n", {}) == 1
+    assert md.oversample_factor("0 0.5 0.5 0.2 0.2\n", {1: 8}) == 1
+
+
+def test_oversample_factor_returns_factor_for_present_class():
+    assert md.oversample_factor("1 0.5 0.5 0.2 0.2\n", {1: 8}) == 8
+
+
+def test_oversample_factor_returns_max_of_present_classes():
+    text = "1 0.5 0.5 0.2 0.2\n2 0.1 0.1 0.1 0.1\n"
+    assert md.oversample_factor(text, {1: 8, 2: 3}) == 8
+
+
+def test_merge_split_duplicates_oversampled_images(tmp_path):
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    _make_split(src, "bike1", "0 0.5 0.5 0.2 0.2\n")
+    stats = md.merge_split(src, dst, prefix="b", mapping={0: 1}, factors={1: 3})
+    assert stats["copied"] == 1
+    assert stats["duplicated"] == 2
+    assert (dst / "images" / "b__bike1.jpg").exists()
+    assert (dst / "images" / "b__bike1__dup1.jpg").exists()
+    assert (dst / "images" / "b__bike1__dup2.jpg").exists()
+    assert (dst / "labels" / "b__bike1__dup2.txt").read_text() == "1 0.5 0.5 0.2 0.2\n"
+
+
+def test_merge_split_does_not_duplicate_without_factors(tmp_path):
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    _make_split(src, "img1", "0 0.5 0.5 0.2 0.2\n")
+    stats = md.merge_split(src, dst, prefix="s", mapping={0: 0})
+    assert stats["duplicated"] == 0
+    assert len(list((dst / "images").iterdir())) == 1
+
+
+def test_merge_split_does_not_duplicate_unaffected_class(tmp_path):
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    _make_split(src, "boxonly", "0 0.5 0.5 0.2 0.2\n")
+    stats = md.merge_split(src, dst, prefix="s", mapping={0: 0}, factors={1: 8})
+    assert stats["duplicated"] == 0
+    assert len(list((dst / "images").iterdir())) == 1

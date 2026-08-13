@@ -67,8 +67,45 @@ def remap_label_text(text: str, mapping: dict[int, int]) -> str:
     return "".join(f"{line}\n" for line in out_lines)
 
 
+def build_oversample_factors(
+    spec: dict | None, unified: list[str]
+) -> dict[int, int]:
+    """{클래스명: 배수} 설정을 {통합 클래스 ID: 배수}로 변환한다."""
+    if not spec:
+        return {}
+    factors: dict[int, int] = {}
+    for class_name, factor in spec.items():
+        if class_name not in unified:
+            raise ValueError(f"알 수 없는 통합 클래스: {class_name}")
+        if not isinstance(factor, int) or isinstance(factor, bool) or factor < 1:
+            raise ValueError(f"배수는 1 이상의 정수여야 함: {class_name}={factor!r}")
+        factors[unified.index(class_name)] = factor
+    return factors
+
+
+def oversample_factor(label_text: str, factors: dict[int, int]) -> int:
+    """이 라벨이 포함한 클래스들의 배수 중 최댓값. 해당 없으면 1."""
+    if not factors:
+        return 1
+    best = 1
+    for line in label_text.splitlines():
+        parts = line.split()
+        if not parts:
+            continue
+        try:
+            class_id = int(float(parts[0]))
+        except ValueError:
+            continue
+        best = max(best, factors.get(class_id, 1))
+    return best
+
+
 def merge_split(
-    src_dir: Path, dst_dir: Path, prefix: str, mapping: dict[int, int]
+    src_dir: Path,
+    dst_dir: Path,
+    prefix: str,
+    mapping: dict[int, int],
+    factors: dict[int, int] | None = None,
 ) -> dict[str, int]:
     """src_dir(images/, labels/)의 한 split을 dst_dir로 복사하며 라벨을 재매핑한다."""
     src_images = Path(src_dir) / "images"
@@ -78,7 +115,14 @@ def merge_split(
     dst_images.mkdir(parents=True, exist_ok=True)
     dst_labels.mkdir(parents=True, exist_ok=True)
 
-    stats = Counter({"copied": 0, "skipped_no_label": 0, "skipped_empty_after_remap": 0})
+    stats = Counter(
+        {
+            "copied": 0,
+            "skipped_no_label": 0,
+            "skipped_empty_after_remap": 0,
+            "duplicated": 0,
+        }
+    )
     if not src_images.is_dir():
         return dict(stats)
 
@@ -99,6 +143,13 @@ def merge_split(
         shutil.copy2(image_path, dst_images / f"{new_stem}{image_path.suffix}")
         (dst_labels / f"{new_stem}.txt").write_text(remapped, encoding="utf-8")
         stats["copied"] += 1
+
+        factor = oversample_factor(remapped, factors or {})
+        for k in range(1, factor):
+            dup_stem = f"{new_stem}__dup{k}"
+            shutil.copy2(image_path, dst_images / f"{dup_stem}{image_path.suffix}")
+            (dst_labels / f"{dup_stem}.txt").write_text(remapped, encoding="utf-8")
+            stats["duplicated"] += 1
     return dict(stats)
 
 
@@ -150,6 +201,8 @@ def main() -> int:
 
     cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
     unified = cfg["classes"]
+    factors = build_oversample_factors(cfg.get("oversample"), unified)
+    print(f"오버샘플링 배수: {factors}")
 
     reset_output_dir(args.out)
 
@@ -169,7 +222,11 @@ def main() -> int:
             if split_dir is None:
                 continue
             stats = merge_split(
-                split_dir, Path(args.out) / split, spec["name"], mapping
+                split_dir,
+                Path(args.out) / split,
+                spec["name"],
+                mapping,
+                factors if split == "train" else None,
             )
             totals.update({f"{split}_{k}": v for k, v in stats.items()})
             print(f"  [{spec['name']}/{split}] {stats}")
