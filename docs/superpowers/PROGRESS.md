@@ -8,8 +8,9 @@ Base commit: 6dfb9ba
 ## Tasks
 - Task 1: conda 환경 + 스캐폴드 + MPS 검증 — **COMPLETE**
 - Task 2: 데이터셋 설정 + Roboflow 다운로드 — **COMPLETE**
-- Task 3: 3클래스 데이터셋 병합 — pending (다음에 여기서 재개)
-- Task 4: YOLO11s 학습 (MPS) — pending
+- Task 3: 3클래스 데이터셋 병합 — **COMPLETE**
+- Task 4: 학습 스크립트 구현 — **COMPLETE** (커밋 6b5f15a, 47/47 테스트)
+- Task 4b: **본 학습 실행 — 사용자 지시 대기 중** (아래 '학습 시작하기' 참고)
 - Task 5: 90프레임 간격 영상 추론 — pending
 - 최종 전체 브랜치 코드 리뷰 — pending
 
@@ -65,6 +66,37 @@ pytest tests/ -v          # 13/13 통과해야 정상
    아무것도 assert하지 않는 조건부 테스트다. Task 1에서 MPS 가용성이 이미 검증됐으므로
    무조건 `assert tr.resolve_device("mps") == "mps"` 로 구현하도록 구현자에게 지시할 것.
 
+## 학습 시작하기 (사용자가 지시하면 실행)
+
+**결정된 설정: YOLO11s, 40 epoch, batch 16, imgsz 640** (사용자 승인 완료 2026-08-13)
+
+```bash
+cd /Users/leehnsong/Desktop/mentoring
+/opt/homebrew/anaconda3/envs/yolo-load/bin/python -u scripts/train.py \
+  --epochs 40 --batch 16 --name loadobj \
+  > /tmp/train_loadobj.log 2>&1
+```
+
+- **`conda run`을 쓰지 말 것** — 출력을 버퍼링하고 데드락이 난다. 환경 python을 직접 호출한다.
+- 반드시 백그라운드로 실행하고 로그를 폴링한다:
+  `tail -c 2000 /tmp/train_loadobj.log | LC_ALL=C tr '\r' '\n' | tail -15`
+- **멈춤 감지:** 로그가 안 늘어나면 `ps -p <PID> -o etime,time,%cpu`. %CPU가 0이고 CPU time이
+  안 오르면 학습이 아니라 hang이다.
+- 완료 후 `models/best.pt` 생성 확인 → 클래스명이 `[box, bicycle, stroller]`인지 검증.
+- **가장 중요한 산출물: 클래스별 mAP50.** 자전거 mAP가 낮으면 실제 데이터 추가가 필요하다.
+
+### 실측 성능 (2026-08-13 측정)
+- 1.4 it/s, epoch당 788 iteration (12,608장 / batch 16)
+- **1 epoch ≈ 10분** (학습 9.4분 + 검증)
+- 40 epoch ≈ **6.7시간** (patience=15로 더 일찍 끝날 수 있음)
+- GPU_mem 8.43GB / 48GB — batch를 더 올릴 여유는 있음
+
+### 알려진 함정 (겪은 문제)
+1. `yolo11s.pt` 자동 다운로드가 HTTPS 읽기에서 무한 정지했다. 이미 curl로 받아
+   레포 루트에 두었으므로(`/*.pt`로 gitignore됨) 네트워크를 타지 않는다. **삭제하지 말 것.**
+2. subagent에 장시간 학습을 맡기면 subagent 종료 시 자식 프로세스가 같이 죽는다.
+   메인 세션에서 `run_in_background`로 직접 실행할 것.
+
 ## Minor findings roll-up (최종 리뷰에서 판단)
 
 - `scripts/download_datasets.py:94-95` — `get_api_key()`가 `load_dotenv` 후 `os.environ`을
@@ -76,3 +108,6 @@ pytest tests/ -v          # 13/13 통과해야 정상
 ## Log
 Task 1: complete (commits 6dfb9ba..a383a52, review clean after 1 fix round; 4/4 tests, MPS verified)
 Task 2: complete (commit 2d3cab9, review approved with no Critical/Important; 13/13 tests; COVERAGE_OK)
+Task 3: complete (commits e1eb599..f89f4a7, review approved after 1 fix round; 30/30 tests, MERGE_OK; box=8176 bicycle=405 stroller=4948)
+Task 3b (수정안): complete (commit 93047cd, review approved; 40/40 tests). 학습셋 오버샘플링 bicycle 8x -> train box=7760 bicycle=2576 stroller=4919, val은 원본 유지(dup=0, box 416 / bicycle 83 / stroller 176)
+Task 4 (코드): complete (commit 6b5f15a, 47/47 tests; 조건부 테스트를 무조건 assert로 수정). 본 학습은 사용자 요청으로 보류 — 지시 시 40 epoch 실행.
