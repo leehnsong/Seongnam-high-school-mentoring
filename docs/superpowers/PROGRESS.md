@@ -111,3 +111,5 @@ Task 2: complete (commit 2d3cab9, review approved with no Critical/Important; 13
 Task 3: complete (commits e1eb599..f89f4a7, review approved after 1 fix round; 30/30 tests, MERGE_OK; box=8176 bicycle=405 stroller=4948)
 Task 3b (수정안): complete (commit 93047cd, review approved; 40/40 tests). 학습셋 오버샘플링 bicycle 8x -> train box=7760 bicycle=2576 stroller=4919, val은 원본 유지(dup=0, box 416 / bicycle 83 / stroller 176)
 Task 4 (코드): complete (commit 6b5f15a, 47/47 tests; 조건부 테스트를 무조건 assert로 수정). 본 학습은 사용자 요청으로 보류 — 지시 시 40 epoch 실행.
+Task 4 리뷰: Approved (Critical/Important 0건). MPS fallback 환경변수가 torch import 이전에 설정됨을 정적 검증 완료. /*.pt gitignore 범위도 정확.
+정리: 병합 경합으로 생긴 'datasets/merged 2/' (라벨 42개, 전부 중복 확인 후) 삭제, runs/smoke·models/smoke.pt 삭제. 데이터셋 무결성 재확인 (train 12605 / val 579).
