@@ -123,6 +123,16 @@ def write_data_yaml(root: Path, classes: list[str]) -> Path:
     return out
 
 
+def reset_output_dir(out: Path) -> Path:
+    """출력 디렉토리를 비우고 다시 만든다. git이 추적하는 .gitkeep은 되살린다."""
+    out = Path(out)
+    if out.exists():
+        shutil.rmtree(out)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / ".gitkeep").touch()
+    return out
+
+
 def _find_split_dir(source_root: Path, split: str) -> Path | None:
     for alias in SPLIT_ALIASES[split]:
         candidate = source_root / alias
@@ -141,8 +151,7 @@ def main() -> int:
     cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
     unified = cfg["classes"]
 
-    if args.out.exists():
-        shutil.rmtree(args.out)
+    reset_output_dir(args.out)
 
     totals = Counter()
     per_class = Counter()

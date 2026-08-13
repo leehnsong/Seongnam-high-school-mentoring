@@ -111,3 +111,26 @@ def test_write_data_yaml_has_three_classes(tmp_path):
     assert data["train"] == "images/train"
     assert data["val"] == "images/val"
     assert Path(data["path"]).is_absolute()
+
+
+def test_reset_output_dir_creates_dir_with_gitkeep(tmp_path):
+    out = tmp_path / "merged"
+    md.reset_output_dir(out)
+    assert out.is_dir()
+    assert (out / ".gitkeep").exists()
+
+
+def test_reset_output_dir_clears_previous_contents(tmp_path):
+    out = tmp_path / "merged"
+    (out / "images").mkdir(parents=True)
+    (out / "images" / "stale.jpg").write_bytes(b"\xff\xd8\xff\xd9")
+    md.reset_output_dir(out)
+    assert not (out / "images").exists()
+
+
+def test_reset_output_dir_restores_gitkeep_after_wipe(tmp_path):
+    out = tmp_path / "merged"
+    (out / "images").mkdir(parents=True)
+    (out / ".gitkeep").touch()
+    md.reset_output_dir(out)
+    assert (out / ".gitkeep").exists(), "재실행 후에도 .gitkeep이 남아야 한다"
