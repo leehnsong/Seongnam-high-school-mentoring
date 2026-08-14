@@ -161,3 +161,113 @@ def test_run_raises_on_missing_video(tmp_path):
             save_path=None,
             show=False,
         )
+
+
+def test_run_releases_capture_when_model_load_fails(tmp_path, monkeypatch):
+    video = _write_test_video(tmp_path / "clip.mp4", frames=10)
+    released = []
+    real_capture = dv.cv2.VideoCapture
+
+    class _SpyCapture:
+        def __init__(self, *args, **kwargs):
+            self._inner = real_capture(*args, **kwargs)
+
+        def isOpened(self):
+            return self._inner.isOpened()
+
+        def get(self, *args):
+            return self._inner.get(*args)
+
+        def read(self):
+            return self._inner.read()
+
+        def release(self):
+            released.append(True)
+            self._inner.release()
+
+    def _missing_weights(weights):
+        raise SystemExit("모델 가중치가 없습니다")
+
+    monkeypatch.setattr(dv.cv2, "VideoCapture", _SpyCapture)
+    monkeypatch.setattr(dv, "load_model", _missing_weights)
+
+    with pytest.raises(SystemExit):
+        dv.run(
+            source=video,
+            weights=Path("missing.pt"),
+            stride=90,
+            conf=0.25,
+            save_path=None,
+            show=False,
+        )
+    assert released, "모델 로드가 실패해도 VideoCapture는 해제되어야 한다"
+
+
+def test_run_keeps_last_detections_between_inferences(tmp_path, monkeypatch):
+    video = _write_test_video(tmp_path / "clip.mp4", frames=95)
+    drawn = []
+    real_draw = dv.draw_detections
+
+    def _spy(frame, detections, class_names):
+        drawn.append(len(detections))
+        return real_draw(frame, detections, class_names)
+
+    class _FakeModel:
+        names = {0: "box", 1: "bicycle", 2: "stroller"}
+
+        def predict(self, *args, **kwargs):
+            return [_FakeResult([([10, 10, 50, 50], 0, 0.9)])]
+
+    monkeypatch.setattr(dv, "load_model", lambda weights: _FakeModel())
+    monkeypatch.setattr(dv, "draw_detections", _spy)
+
+    dv.run(
+        source=video,
+        weights=Path("unused.pt"),
+        stride=90,
+        conf=0.25,
+        save_path=None,
+        show=False,
+    )
+    assert len(drawn) == 95, "모든 프레임에 그리기가 호출되어야 한다"
+    assert all(count == 1 for count in drawn), (
+        "추론하지 않는 프레임에도 직전 탐지 결과가 그대로 그려져야 한다"
+    )
+
+
+def test_run_clears_detections_when_inference_returns_nothing(tmp_path, monkeypatch):
+    video = _write_test_video(tmp_path / "clip.mp4", frames=95)
+    drawn = []
+    real_draw = dv.draw_detections
+
+    def _spy(frame, detections, class_names):
+        drawn.append(len(detections))
+        return real_draw(frame, detections, class_names)
+
+    class _FakeModel:
+        names = {0: "box", 1: "bicycle", 2: "stroller"}
+
+        def __init__(self):
+            self.calls = 0
+
+        def predict(self, *args, **kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                return [_FakeResult([([10, 10, 50, 50], 0, 0.9)])]
+            return [_FakeResult([])]
+
+    monkeypatch.setattr(dv, "load_model", lambda weights: _FakeModel())
+    monkeypatch.setattr(dv, "draw_detections", _spy)
+
+    dv.run(
+        source=video,
+        weights=Path("unused.pt"),
+        stride=90,
+        conf=0.25,
+        save_path=None,
+        show=False,
+    )
+    assert drawn[0] == 1
+    assert drawn[89] == 1, "프레임 89까지는 첫 추론 결과가 유지되어야 한다"
+    assert drawn[90] == 0, "두 번째 추론이 빈 결과면 박스가 사라져야 한다"
+    assert drawn[94] == 0

@@ -127,27 +127,29 @@ def run(
     if not capture.isOpened():
         raise SystemExit(f"영상을 열 수 없습니다 (코덱 문제일 수 있습니다): {source}")
 
-    model = load_model(weights)
-    names = model.names
-    class_names = [names[i] for i in sorted(names)] if isinstance(names, dict) else list(names)
-
-    fps = capture.get(cv2.CAP_PROP_FPS) or 30.0
-    width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
     writer = None
-    if save_path is not None:
-        save_path = Path(save_path)
-        save_path.parent.mkdir(parents=True, exist_ok=True)
-        writer = cv2.VideoWriter(
-            str(save_path), cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height)
+    try:
+        model = load_model(weights)
+        names = model.names
+        class_names = (
+            [names[i] for i in sorted(names)] if isinstance(names, dict) else list(names)
         )
 
-    last_detections: list[Detection] = []
-    frame_index = 0
-    inferences = 0
+        fps = capture.get(cv2.CAP_PROP_FPS) or 30.0
+        width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    try:
+        if save_path is not None:
+            save_path = Path(save_path)
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+            writer = cv2.VideoWriter(
+                str(save_path), cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height)
+            )
+
+        last_detections: list[Detection] = []
+        frame_index = 0
+        inferences = 0
+
         while True:
             ok, frame = capture.read()
             if not ok:
