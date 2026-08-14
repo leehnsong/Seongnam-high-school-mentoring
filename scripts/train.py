@@ -56,12 +56,18 @@ def build_train_kwargs(
     }
 
 
-def export_best_weights(run_dir: Path, dest: Path) -> Path:
+def export_best_weights(run_dir: Path, dest: Path, force: bool = False) -> Path:
     """학습 결과 best.pt를 models/best.pt로 복사한다."""
     src = Path(run_dir) / "weights" / "best.pt"
     if not src.exists():
         raise FileNotFoundError(f"학습 가중치를 찾을 수 없습니다: {src}")
     dest = Path(dest)
+    if dest.exists() and not force:
+        raise FileExistsError(
+            f"기존 가중치를 덮어쓰지 않습니다: {dest}\n"
+            "이전 학습 결과가 사라질 수 있습니다. 계속하려면 --force 를 붙이거나 "
+            "--dest 로 다른 경로를 지정하세요."
+        )
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dest)
     return dest
@@ -77,6 +83,9 @@ def main() -> int:
     parser.add_argument("--device", default="mps")
     parser.add_argument("--name", default="loadobj")
     parser.add_argument("--dest", type=Path, default=DEFAULT_DEST)
+    parser.add_argument(
+        "--force", action="store_true", help="기존 --dest 가중치를 덮어쓴다"
+    )
     args = parser.parse_args()
 
     if not args.data.exists():
@@ -97,7 +106,7 @@ def main() -> int:
     results = model.train(**kwargs)
 
     run_dir = Path(results.save_dir)
-    dest = export_best_weights(run_dir, args.dest)
+    dest = export_best_weights(run_dir, args.dest, force=args.force)
     print(f"\n학습 완료. 가중치 저장: {dest}")
     print(f"학습 로그/그래프: {run_dir}")
     return 0

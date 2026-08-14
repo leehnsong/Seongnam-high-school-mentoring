@@ -11,16 +11,20 @@ oversample:
   bicycle: 8
 
 # Roboflow Universe 원본 데이터셋 목록.
-# version을 생략하면 사용 가능한 가장 높은 버전을 자동 선택한다.
+# version은 실제로 다운로드해 현재 모델을 학습시킨 버전으로 고정되어 있다.
+# 재현성을 위해 임의로 최신 버전을 자동 선택하지 않는다 — 버전을 올리려면
+# 이 값을 명시적으로 바꾸고 download_datasets.py -> merge_datasets.py -> train.py를 다시 돌릴 것.
 sources:
   - name: box_cardboard_main
     workspace: harshuu
     project: cardboard-box-detection-kh0qu
+    version: 1
     target: box
 
   - name: box_open_closed
     workspace: cardbox-damage-detection
     project: custom-dataset-for-closed-and-open-cardboard-box
+    version: 21
     class_map:
       Closed Cardboard Box: box
       Open Cardboard Box: box
@@ -28,6 +32,7 @@ sources:
   - name: mixed_stroller_bicycle
     workspace: thales-a5kye
     project: stroller_final
+    version: 3
     class_map:
       3-stroller: stroller
       4-bicycle: bicycle
@@ -35,15 +40,18 @@ sources:
   - name: stroller_ultimate
     workspace: furnitureselectronics
     project: ultimite_strollers_detection
+    version: 1
     target: stroller
 
   - name: bicycle_training_data
     workspace: yolov5-sbzvs
     project: bicycle-training-data
+    version: 1
     target: bicycle
 
   - name: bicycle_bike_identification
     workspace: testing-qu1kc
     project: yolo-bike-identification-project
+    version: 4
     class_map:
       Bicycle: bicycle

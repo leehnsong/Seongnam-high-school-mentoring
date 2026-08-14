@@ -159,9 +159,13 @@ def run(
                 results = model.predict(frame, conf=conf, verbose=False)
                 last_detections = parse_results(results[0], conf) if results else []
                 inferences += 1
+                names_str = ", ".join(
+                    class_names[d.cls_id] if d.cls_id < len(class_names) else "?"
+                    for d in last_detections
+                )
                 print(
                     f"  frame {frame_index}: {len(last_detections)}개 탐지 "
-                    f"({', '.join(class_names[d.cls_id] for d in last_detections) or '-'})"
+                    f"({names_str or '-'})"
                 )
 
             # 추론하지 않은 프레임에도 직전 탐지 결과를 그대로 그린다.

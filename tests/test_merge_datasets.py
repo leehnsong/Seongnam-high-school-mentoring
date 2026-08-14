@@ -200,3 +200,24 @@ def test_merge_split_does_not_duplicate_unaffected_class(tmp_path):
     stats = md.merge_split(src, dst, prefix="s", mapping={0: 0}, factors={1: 8})
     assert stats["duplicated"] == 0
     assert len(list((dst / "images").iterdir())) == 1
+
+
+def test_main_returns_nonzero_when_nothing_merged(tmp_path, capsys, monkeypatch):
+    config = tmp_path / "datasets.yaml"
+    config.write_text(
+        yaml.safe_dump(
+            {
+                "classes": UNIFIED,
+                "sources": [{"name": "absent", "workspace": "w", "project": "p", "target": "box"}],
+            }
+        )
+    )
+    empty_raw = tmp_path / "raw"
+    empty_raw.mkdir()
+    out = tmp_path / "merged"
+    monkeypatch.setattr(
+        "sys.argv",
+        ["merge_datasets.py", "--config", str(config), "--raw", str(empty_raw), "--out", str(out)],
+    )
+    assert md.main() == 1
+    assert "학습 이미지가 하나도" in capsys.readouterr().out

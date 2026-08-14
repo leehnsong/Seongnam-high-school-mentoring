@@ -54,7 +54,45 @@ def test_export_best_weights_raises_when_missing(tmp_path):
         tr.export_best_weights(run_dir, tmp_path / "models" / "best.pt")
 
 
-def test_mps_fallback_env_is_set():
-    import os
+def test_export_best_weights_refuses_to_overwrite(tmp_path):
+    run_dir = tmp_path / "run"
+    (run_dir / "weights").mkdir(parents=True)
+    (run_dir / "weights" / "best.pt").write_bytes(b"new")
+    dest = tmp_path / "models" / "best.pt"
+    dest.parent.mkdir(parents=True)
+    dest.write_bytes(b"existing")
+    with pytest.raises(FileExistsError):
+        tr.export_best_weights(run_dir, dest)
+    assert dest.read_bytes() == b"existing", "기존 가중치가 보존되어야 한다"
 
-    assert os.environ.get("PYTORCH_ENABLE_MPS_FALLBACK") == "1"
+
+def test_export_best_weights_overwrites_with_force(tmp_path):
+    run_dir = tmp_path / "run"
+    (run_dir / "weights").mkdir(parents=True)
+    (run_dir / "weights" / "best.pt").write_bytes(b"new")
+    dest = tmp_path / "models" / "best.pt"
+    dest.parent.mkdir(parents=True)
+    dest.write_bytes(b"existing")
+    assert tr.export_best_weights(run_dir, dest, force=True) == dest
+    assert dest.read_bytes() == b"new"
+
+
+def test_train_sets_mps_fallback_env_before_torch():
+    import os
+    import subprocess
+    import sys
+
+    code = (
+        "import sys; sys.path.insert(0, 'scripts');"
+        "import train, os;"
+        "print(os.environ.get('PYTORCH_ENABLE_MPS_FALLBACK'))"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=str(PROJECT_ROOT),
+        capture_output=True,
+        text=True,
+        env={"PATH": os.environ.get("PATH", ""), "HOME": os.environ.get("HOME", "")},
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "1"

@@ -234,6 +234,17 @@ def main() -> int:
         for unified_id in set(mapping.values()):
             per_class[unified[unified_id]] += 1
 
+    print(f"\n합계: {dict(totals)}")
+    print(f"클래스별 기여 데이터셋 수: {dict(per_class)}")
+
+    if totals.get("train_copied", 0) == 0:
+        print(
+            "\n오류: 학습 이미지가 하나도 병합되지 않았습니다.\n"
+            "datasets/raw/ 가 비어 있거나 모든 소스가 건너뛰어졌습니다. "
+            "먼저 scripts/download_datasets.py 를 실행하세요."
+        )
+        return 1
+
     # YOLO 표준 레이아웃(images/train, labels/train)으로 재배치
     final = Path(args.out)
     for split in ("train", "val"):
@@ -248,8 +259,6 @@ def main() -> int:
         shutil.rmtree(final / split, ignore_errors=True)
 
     write_data_yaml(final, unified)
-    print(f"\n합계: {dict(totals)}")
-    print(f"클래스별 기여 데이터셋 수: {dict(per_class)}")
     print(f"data.yaml 생성: {final / 'data.yaml'}")
     return 0
 
