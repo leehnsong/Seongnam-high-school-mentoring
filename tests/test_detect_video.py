@@ -271,3 +271,30 @@ def test_run_clears_detections_when_inference_returns_nothing(tmp_path, monkeypa
     assert drawn[89] == 1, "프레임 89까지는 첫 추론 결과가 유지되어야 한다"
     assert drawn[90] == 0, "두 번째 추론이 빈 결과면 박스가 사라져야 한다"
     assert drawn[94] == 0
+
+
+def test_label_scale_grows_with_frame_height():
+    small, _ = dv.label_scale(480)
+    large, _ = dv.label_scale(1080)
+    assert large > small, "고해상도일수록 글자가 커져야 한다"
+
+
+def test_label_scale_has_minimum_for_small_frames():
+    scale, thickness = dv.label_scale(120)
+    assert scale >= 0.5
+    assert thickness >= 1
+
+
+def test_label_scale_rejects_non_positive_height():
+    with pytest.raises(ValueError):
+        dv.label_scale(0)
+
+
+def test_draw_detections_label_is_larger_at_1080p():
+    import numpy as np
+
+    det = [dv.Detection(x1=100, y1=100, x2=300, y2=300, cls_id=0, conf=0.9)]
+    small = dv.draw_detections(np.zeros((480, 854, 3), np.uint8), det, CLASS_NAMES)
+    large = dv.draw_detections(np.zeros((1080, 1920, 3), np.uint8), det, CLASS_NAMES)
+    # 라벨 배경이 칠해진 픽셀 수가 고해상도에서 더 많아야 한다
+    assert (large[:100] > 0).sum() > (small[:100] > 0).sum()

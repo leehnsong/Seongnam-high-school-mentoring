@@ -13,6 +13,8 @@ datasets/merged/*
 models/*.pt
 outputs/*
 runs/
+video/
+img/
 
 # sdd scratch
 .superpowers/

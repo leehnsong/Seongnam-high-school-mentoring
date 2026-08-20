@@ -67,32 +67,48 @@ def parse_results(result: Any, conf_threshold: float) -> list[Detection]:
     return detections
 
 
+def label_scale(frame_height: int) -> tuple[float, int]:
+    """프레임 높이에 비례한 (글자 크기, 선 굵기)를 돌려준다.
+
+    480p 기준값을 그대로 1080p에 쓰면 라벨이 읽을 수 없을 만큼 작아진다.
+    """
+    if frame_height <= 0:
+        raise ValueError("frame_height는 1 이상이어야 합니다.")
+    scale = max(0.5, frame_height / 640)
+    thickness = max(1, round(frame_height / 480))
+    return scale, thickness
+
+
 def draw_detections(frame, detections: list[Detection], class_names: list[str]):
     """프레임 위에 박스와 라벨을 그린다."""
     height, width = frame.shape[:2]
+    scale, thickness = label_scale(height)
     for det in detections:
         x1 = max(0, min(det.x1, width - 1))
         y1 = max(0, min(det.y1, height - 1))
         x2 = max(0, min(det.x2, width - 1))
         y2 = max(0, min(det.y2, height - 1))
         color = class_color(det.cls_id)
-        cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+        cv2.rectangle(frame, (x1, y1), (x2, y2), color, thickness + 1)
 
         name = class_names[det.cls_id] if det.cls_id < len(class_names) else "?"
         label = f"{name} {det.conf:.2f}"
         (tw, th), baseline = cv2.getTextSize(
-            label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1
+            label, cv2.FONT_HERSHEY_SIMPLEX, scale, thickness
         )
-        top = max(0, y1 - th - baseline - 2)
-        cv2.rectangle(frame, (x1, top), (x1 + tw + 2, top + th + baseline + 2), color, -1)
+        pad = thickness * 2
+        top = max(0, y1 - th - baseline - pad)
+        cv2.rectangle(
+            frame, (x1, top), (x1 + tw + pad, top + th + baseline + pad), color, -1
+        )
         cv2.putText(
             frame,
             label,
-            (x1 + 1, top + th + 1),
+            (x1 + pad // 2, top + th + pad // 2),
             cv2.FONT_HERSHEY_SIMPLEX,
-            0.5,
+            scale,
             (0, 0, 0),
-            1,
+            thickness,
             cv2.LINE_AA,
         )
     return frame
