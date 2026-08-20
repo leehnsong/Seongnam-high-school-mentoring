@@ -13,8 +13,6 @@ datasets/merged/*
 models/*.pt
 outputs/*
 runs/
-video/
-img/
 
 # sdd scratch
 .superpowers/
@@ -24,6 +22,13 @@ img/
 !datasets/raw/.gitkeep
 !datasets/merged/.gitkeep
 !outputs/.gitkeep
+
+# 입력 미디어 — 폴더 구조는 유지하고 내용물만 제외
+# (부정 규칙은 반드시 무시 규칙 뒤에 와야 한다 — 나중 규칙이 이긴다)
+video/*
+!video/.gitkeep
+img/*
+!img/.gitkeep
 
 # 루트에 내려받은 사전학습 가중치 (yolo11s.pt 등)
 /*.pt
