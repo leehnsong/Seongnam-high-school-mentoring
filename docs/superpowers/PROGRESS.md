@@ -3,15 +3,15 @@
 Plan: `docs/superpowers/plans/2026-08-12-yolo-loading-detection.md`
 Spec: `docs/superpowers/specs/2026-07-10-yolo-loading-detection-design.md`
 Branch: `feat/yolo-loading-detection`
-Base commit: 2c295af
+Base commit: d039c67
 
 ## Tasks
 - Task 1: conda 환경 + 스캐폴드 + MPS 검증 — **COMPLETE**
 - Task 2: 데이터셋 설정 + Roboflow 다운로드 — **COMPLETE**
 - Task 3: 3클래스 데이터셋 병합 — **COMPLETE**
-- Task 4: 학습 스크립트 구현 — **COMPLETE** (커밋 c449442, 47/47 테스트)
+- Task 4: 학습 스크립트 구현 — **COMPLETE** (커밋 2be4d10, 47/47 테스트)
 - Task 4b: **본 학습 실행 — COMPLETE** (40 epoch / 9.18시간, 2026-08-14 05:33 완료)
-- Task 5: 90프레임 간격 영상 추론 — **COMPLETE** (커밋 411fb4d, 843ae63)
+- Task 5: 90프레임 간격 영상 추론 — **COMPLETE** (커밋 7694a15, 198cf50)
 - 최종 전체 브랜치 코드 리뷰 — **COMPLETE** (수정 반영, 테스트 67개)
 
 ## 재개 방법
@@ -103,10 +103,10 @@ cd /Users/leehnsong/Desktop/mentoring
   검증하지 않고 조용히 수용한다. Task 3에 영향.
 
 ## Log
-Task 1: complete (commits 2c295af..e644081, review clean after 1 fix round; 4/4 tests, MPS verified)
-Task 2: complete (commit bc57d30, review approved with no Critical/Important; 13/13 tests; COVERAGE_OK)
-Task 3: complete (commits 156f8da..13eb83d, review approved after 1 fix round; 30/30 tests, MERGE_OK; box=8176 bicycle=405 stroller=4948)
-Task 3b (수정안): complete (commit 4d858f0, review approved; 40/40 tests). 학습셋 오버샘플링 bicycle 8x -> train box=7760 bicycle=2576 stroller=4919, val은 원본 유지(dup=0, box 416 / bicycle 83 / stroller 176)
+Task 1: complete (commits d039c67..cbf2f11, review clean after 1 fix round; 4/4 tests, MPS verified)
+Task 2: complete (commit 625b9da, review approved with no Critical/Important; 13/13 tests; COVERAGE_OK)
+Task 3: complete (commits c719c99..728f9eb, review approved after 1 fix round; 30/30 tests, MERGE_OK; box=8176 bicycle=405 stroller=4948)
+Task 3b (수정안): complete (commit 040cbc6, review approved; 40/40 tests). 학습셋 오버샘플링 bicycle 8x -> train box=7760 bicycle=2576 stroller=4919, val은 원본 유지(dup=0, box 416 / bicycle 83 / stroller 176)
 Task 4b (본 학습): complete. 40 epoch, Apple M-series MPS, 9.18시간 소요, 2026-08-14 05:33 완료.
   검증 결과 — mAP50: 전체 0.971 / box 0.994 / bicycle 0.922 / stroller 0.995. 추론 속도 6.2ms/이미지.
   가장 약한 지표는 bicycle Recall 0.892. `models/best.pt` 생성 후
@@ -115,9 +115,9 @@ Task 4b (본 학습): complete. 40 epoch, Apple M-series MPS, 9.18시간 소요,
   낮춰도 0건 탐지 (검증셋 5/5 및 밝은 복도 사진(0.93, 0.84)에서는 box 탐지 성공). 코드 결함이
   아니라 학습 데이터와 실제 현장 이미지 간 도메인 갭으로 판단 — 개선하려면 실제 현장 이미지에
   라벨링이 필요하다.
-Task 5 (90프레임 추론): complete (commits 411fb4d, 843ae63).
+Task 5 (90프레임 추론): complete (commits 7694a15, 198cf50).
 최종 리뷰: 지적사항 7건 반영 (가중치 덮어쓰기 방지 --force, 빈 병합 시 exit 1, 데이터셋 버전 고정,
   progress print 가드, 취약 테스트 교체, README/PROGRESS 갱신). 테스트 67개로 증가.
-Task 4 (코드): complete (commit c449442, 47/47 tests; 조건부 테스트를 무조건 assert로 수정). 본 학습은 사용자 요청으로 보류 — 지시 시 40 epoch 실행.
+Task 4 (코드): complete (commit 2be4d10, 47/47 tests; 조건부 테스트를 무조건 assert로 수정). 본 학습은 사용자 요청으로 보류 — 지시 시 40 epoch 실행.
 Task 4 리뷰: Approved (Critical/Important 0건). MPS fallback 환경변수가 torch import 이전에 설정됨을 정적 검증 완료. /*.pt gitignore 범위도 정확.
 정리: 병합 경합으로 생긴 'datasets/merged 2/' (라벨 42개, 전부 중복 확인 후) 삭제, runs/smoke·models/smoke.pt 삭제. 데이터셋 무결성 재확인 (train 12605 / val 579).
