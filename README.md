@@ -8,6 +8,31 @@
 | 1 | `bicycle` | 일반 자전거만 (오토바이·킥보드 제외) |
 | 2 | `stroller` | 아기 유모차만 |
 
+## 실행 결과
+
+녹화 영상에서 적재물을 탐지해 클래스 이름과 신뢰도를 박스 위에 표시합니다.
+
+![탐지 결과 데모](docs/media/demo.gif)
+
+<sub>1920×1080 / 38초 영상, 90프레임(3초) 간격으로 13회 추론. 위 GIF는 480px·8fps로 축소한 6초 구간입니다.</sub>
+
+![탐지 결과 정지컷](docs/media/sample_frame.jpg)
+
+```
+$ python scripts/detect_video.py --source video/test.mp4 --no-show
+  frame 0: 1개 탐지 (box)
+  frame 90: 1개 탐지 (box)
+  frame 180: 1개 탐지 (box)
+  frame 270: 1개 탐지 (stroller)
+  frame 360: 2개 탐지 (box, stroller)
+  frame 450: 0개 탐지 (-)
+  ...
+총 1150프레임 처리, 13회 추론
+결과 영상: outputs/test_detected.mp4
+```
+
+클래스별 박스 색상: `box` 주황 / `bicycle` 초록 / `stroller` 파랑
+
 ## 설치
 
 ```bash
